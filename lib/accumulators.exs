@@ -121,11 +121,10 @@ Benchee.run(%{
 
     result = :ets.lookup_element(:global_accumulators, :accum, 2)
     # Ensure we do not leak memory
-    :ets.delete(:global_accumulators, accum)
+    :ets.delete(:global_accumulators, :accum)
     result
   end,
   "global ETS (maps)" => fn ->
-    :ets.new(:global_accumulators, [:named_table, :set, :public, write_concurrency: :auto])
     :ets.insert(:global_accumulators, {:accum, 0})
 
     Enum.each(maps, fn el ->
