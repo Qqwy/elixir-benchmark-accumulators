@@ -1,5 +1,3 @@
-Mix.install([:benchee])
-
 n = 100
 
 integers = Enum.to_list(1..n)
@@ -50,19 +48,43 @@ Benchee.run(%{
       accum = :erlang.get({__MODULE__, :accum})
       :erlang.put({__MODULE__, :accum}, accum + el.value)
     end)
+
+    :erlang.get({__MODULE__, :accum})
   end,
   "MVar (integers)" => fn ->
-    var = MVar.new(accum, 0)
+    accum = MVar.new(0)
 
     Enum.each(integers, fn el ->
-      MVar.set(MVar.get(accum) + el)
+      MVar.set(accum, MVar.get(accum) + el)
     end)
+
+    MVar.get(accum)
   end,
   "MVar (maps)" => fn ->
-    var = MVar.new(accum, 0)
+    accum = MVar.new(0)
 
     Enum.each(maps, fn el ->
-      MVar.set(MVar.get(accum + el.value))
+      MVar.set(accum, MVar.get(accum) + el.value)
+    end)
+
+    MVar.get(accum)
+  end,
+  "ETS (integers)" => fn ->
+    :ets.new(:accumulators, [:set, :public, write_concurrency: :auto])
+    :ets.insert(:accumulators, {:accum, 0})
+
+    Enum.each(integers, fn el ->
+      val = :ets.lookup_element(:accumulators, :accum, 2)
+      :ets.update_element(:accumulators, :accum, {2, val + el})
+    end)
+  end,
+  "ETS (maps)" => fn ->
+    :ets.new(:accumulators, [:set, :public, write_concurrency: :auto])
+    :ets.insert(:accumulators, {:accum, 0})
+
+    Enum.each(maps, fn el ->
+      val = :ets.lookup_element(:accumulators, :accum, 2)
+      :ets.update_element(:accumulators, :accum, {2, val + el.value})
     end)
   end
 })
