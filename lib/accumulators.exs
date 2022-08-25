@@ -70,7 +70,7 @@ Benchee.run(%{
     MVar.get(accum)
   end,
   "ETS (integers)" => fn ->
-    :ets.new(:accumulators, [:set, :public, write_concurrency: :auto])
+    :ets.new(:accumulators, [:named_table, :set, :public, write_concurrency: :auto])
     :ets.insert(:accumulators, {:accum, 0})
 
     Enum.each(integers, fn el ->
@@ -79,7 +79,7 @@ Benchee.run(%{
     end)
   end,
   "ETS (maps)" => fn ->
-    :ets.new(:accumulators, [:set, :public, write_concurrency: :auto])
+    :ets.new(:accumulators, [:named_table, :set, :public, write_concurrency: :auto])
     :ets.insert(:accumulators, {:accum, 0})
 
     Enum.each(maps, fn el ->
