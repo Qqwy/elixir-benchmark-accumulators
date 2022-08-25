@@ -5,6 +5,12 @@ use rustler::Env;
 use rustler::Term;
 use std::sync::Mutex;
 
+mod atoms {
+    rustler::atoms! {
+        ok
+    }
+}
+
 pub struct MVar {
     inner: Mutex<MVarContents>,
 }
@@ -59,13 +65,14 @@ fn new(term: Term) -> ResourceArc<MVar> {
 }
 
 #[rustler::nif]
-fn get<'a>(env: Env<'a>, mvar: ResourceArc<MVar>) -> Term<'a> {
+fn get(env: Env, mvar: ResourceArc<MVar>) -> Term {
     mvar.get(env)
 }
 
 #[rustler::nif]
-fn set(mvar: ResourceArc<MVar>, term: Term) {
-    mvar.set(&term)
+fn set<'a>(env: Env<'a>, mvar: ResourceArc<MVar>, term: Term<'a>) -> Term<'a> {
+    mvar.set(&term);
+    atoms::ok().to_term(env)
 }
 
 fn load(env: Env, _info: Term) -> bool {

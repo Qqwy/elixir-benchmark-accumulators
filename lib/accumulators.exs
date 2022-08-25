@@ -50,5 +50,19 @@ Benchee.run(%{
       accum = :erlang.get({__MODULE__, :accum})
       :erlang.put({__MODULE__, :accum}, accum + el.value)
     end)
+  end,
+  "MVar (integers)" => fn ->
+    var = MVar.new(accum, 0)
+
+    Enum.each(integers, fn el ->
+      MVar.set(MVar.get(accum) + el)
+    end)
+  end,
+  "MVar (maps)" => fn ->
+    var = MVar.new(accum, 0)
+
+    Enum.each(maps, fn el ->
+      MVar.set(MVar.get(accum + el.value))
+    end)
   end
 })
