@@ -17,7 +17,10 @@ Benchee.run(%{
       :ok = Agent.update(pid, &(&1 + el))
     end)
 
-    Agent.get(pid, & &1)
+    result = Agent.get(pid, & &1)
+    # Ensure we do not leak processes
+    Agent.stop(pid)
+    result
   end,
   "Agents (maps)" => fn ->
     {:ok, pid} = Agent.start(fn -> 0 end)
@@ -26,7 +29,10 @@ Benchee.run(%{
       :ok = Agent.update(pid, &(&1 + el.value))
     end)
 
-    Agent.get(pid, & &1)
+    result = Agent.get(pid, & &1)
+    # Ensure we do not leak processes
+    Agent.stop(pid)
+    result
   end,
   ":counters (integers)" => fn ->
     counter = :counters.new(1, [])
@@ -40,6 +46,10 @@ Benchee.run(%{
       accum = :erlang.get({__MODULE__, :accum})
       :erlang.put({__MODULE__, :accum}, accum + el)
     end)
+
+    # Ensure we do not leak memory
+    result = :erlang.put({__MODULE__, :accum}, :undefined)
+    result
   end,
   "Process dictionary (maps)" => fn ->
     :erlang.put({__MODULE__, :accum}, 0)
@@ -49,7 +59,9 @@ Benchee.run(%{
       :erlang.put({__MODULE__, :accum}, accum + el.value)
     end)
 
-    :erlang.get({__MODULE__, :accum})
+    # Ensure we do not leak memory
+    result = :erlang.put({__MODULE__, :accum}, :undefined)
+    result
   end,
   "MVar (integers)" => fn ->
     accum = MVar.new(0)
@@ -77,6 +89,11 @@ Benchee.run(%{
       val = :ets.lookup_element(:accumulators, :accum, 2)
       :ets.update_element(:accumulators, :accum, {2, val + el})
     end)
+
+    result = :ets.lookup_element(:accumulators, :accum, 2)
+    # Ensure we do not leak memory
+    :ets.delete(:accumulators)
+    result
   end,
   "ETS (maps)" => fn ->
     :ets.new(:accumulators, [:named_table, :set, :public, write_concurrency: :auto])
@@ -86,5 +103,10 @@ Benchee.run(%{
       val = :ets.lookup_element(:accumulators, :accum, 2)
       :ets.update_element(:accumulators, :accum, {2, val + el.value})
     end)
+
+    result = :ets.lookup_element(:accumulators, :accum, 2)
+    # Ensure we do not leak memory
+    :ets.delete(:accumulators)
+    result
   end
 })
