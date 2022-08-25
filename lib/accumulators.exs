@@ -3,6 +3,8 @@ n = 100
 integers = Enum.to_list(1..n)
 maps = Enum.map(1..n, &%{value: &1, nested_stuff: List.duplicate(:foo, 1000)})
 
+:ets.new(:global_accumulators, [:named_table, :set, :public, write_concurrency: :auto])
+
 Benchee.run(%{
   "reduce (integers)" => fn ->
     Enum.reduce(integers, 0, &+/2)
@@ -107,6 +109,33 @@ Benchee.run(%{
     result = :ets.lookup_element(:accumulators, :accum, 2)
     # Ensure we do not leak memory
     :ets.delete(:accumulators)
+    result
+  end,
+  "global ETS (integers)" => fn ->
+    :ets.insert(:global_accumulators, {:accum, 0})
+
+    Enum.each(integers, fn el ->
+      val = :ets.lookup_element(:global_accumulators, :accum, 2)
+      :ets.update_element(:global_accumulators, :accum, {2, val + el})
+    end)
+
+    result = :ets.lookup_element(:global_accumulators, :accum, 2)
+    # Ensure we do not leak memory
+    :ets.delete(:global_accumulators, accum)
+    result
+  end,
+  "global ETS (maps)" => fn ->
+    :ets.new(:global_accumulators, [:named_table, :set, :public, write_concurrency: :auto])
+    :ets.insert(:global_accumulators, {:accum, 0})
+
+    Enum.each(maps, fn el ->
+      val = :ets.lookup_element(:global_accumulators, :accum, 2)
+      :ets.update_element(:global_accumulators, :accum, {2, val + el.value})
+    end)
+
+    result = :ets.lookup_element(:global_accumulators, :accum, 2)
+    # Ensure we do not leak memory
+    :ets.delete(:global_accumulators, :accum)
     result
   end
 })
