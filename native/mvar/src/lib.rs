@@ -5,12 +5,10 @@ use rustler::Env;
 use rustler::Term;
 use std::sync::Mutex;
 
-#[derive(Clone)]
 pub struct MVar {
     inner: Mutex<MVarContents>,
 }
 
-#[derive(Clone)]
 struct MVarContents {
     owned_env: OwnedEnv,
     saved_term: SavedTerm,
@@ -75,4 +73,4 @@ fn load(env: Env, _info: Term) -> bool {
     true
 }
 
-rustler::init!("Elixir.MVar", [new, get, set]);
+rustler::init!("Elixir.MVar", [new, get, set], load = load);
